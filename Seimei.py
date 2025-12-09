@@ -43,7 +43,7 @@ class RenameFrame(wx.Frame):
     """メインウィンドウ"""
 
     def __init__(self):
-        super().__init__(None, title="ファイル名変換", size=(900, 520))
+        super().__init__(None, title="整名", size=(900, 520))
         self._build_ui()
         self.Centre()
         self.Show()
