@@ -94,8 +94,17 @@ class RenameFrame(wx.Frame):
     def _build_ui(self):
         panel = wx.Panel(self)
         sizer = wx.BoxSizer(wx.HORIZONTAL)
+        font = wx.Font(11, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
 
-        # 左右に読み取り専用のマルチラインテキストを配置
+        # 左右にラベルと読み取り専用のマルチラインテキストを配置
+        left_box = wx.BoxSizer(wx.VERTICAL)
+        right_box = wx.BoxSizer(wx.VERTICAL)
+
+        left_label = wx.StaticText(panel, label="変更前")
+        right_label = wx.StaticText(panel, label="変更後")
+        left_label.SetFont(font)
+        right_label.SetFont(font)
+
         self.left_text = wx.TextCtrl(
             panel,
             style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2 | wx.TE_DONTWRAP,
@@ -104,12 +113,19 @@ class RenameFrame(wx.Frame):
             panel,
             style=wx.TE_MULTILINE | wx.TE_READONLY | wx.TE_RICH2 | wx.TE_DONTWRAP,
         )
+        self.left_text.SetFont(font)
+        self.right_text.SetFont(font)
 
         self.left_text.SetDropTarget(RenameDropTarget(self.handle_drop))
         self.right_text.SetDropTarget(RenameDropTarget(self.handle_drop))
 
-        sizer.Add(self.left_text, 1, wx.EXPAND | wx.ALL, 8)
-        sizer.Add(self.right_text, 1, wx.EXPAND | wx.ALL, 8)
+        left_box.Add(left_label, 0, wx.LEFT | wx.RIGHT | wx.TOP, 8)
+        left_box.Add(self.left_text, 1, wx.EXPAND | wx.ALL, 8)
+        right_box.Add(right_label, 0, wx.LEFT | wx.RIGHT | wx.TOP, 8)
+        right_box.Add(self.right_text, 1, wx.EXPAND | wx.ALL, 8)
+
+        sizer.Add(left_box, 1, wx.EXPAND)
+        sizer.Add(right_box, 1, wx.EXPAND)
         panel.SetSizer(sizer)
 
     def handle_drop(self, paths):
