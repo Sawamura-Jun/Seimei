@@ -5,6 +5,7 @@ import wx
 # 置換ルールをここに追加することで、禁止文字の追加や調整がしやすい
 REPLACEMENTS = [
     ("_vti_", "_"),
+    ('"', "_"),
     (" ", "_"),
     ("/", "_"),
     ("#", "_"),
@@ -16,7 +17,39 @@ REPLACEMENTS = [
     (">", "_"),
     ("?", "_"),
     ("|", "_"),
+    ("　", "_"),
+    ("\u00A0","_"),  # 改行不可のスペース
+    ("~$", "_"),     # 本来は、"~$"で始まるファイル名が不可だが一律に置き換える
 ]
+
+RESERVED_NAMES = {
+    "desktop.ini",
+    ".lock",
+    "con",
+    "prn",
+    "aux",
+    "nul",
+    "com0",
+    "com1",
+    "com2",
+    "com3",
+    "com4",
+    "com5",
+    "com6",
+    "com7",
+    "com8",
+    "com9",
+    "lpt0",
+    "lpt1",
+    "lpt2",
+    "lpt3",
+    "lpt4",
+    "lpt5",
+    "lpt6",
+    "lpt7",
+    "lpt8",
+    "lpt9",
+}
 
 
 def sanitize_name(name: str) -> str:
@@ -24,6 +57,16 @@ def sanitize_name(name: str) -> str:
     sanitized = name
     for target, replacement in REPLACEMENTS:
         sanitized = sanitized.replace(target, replacement)
+    return sanitized
+
+
+def make_safe_name(name: str) -> str:
+    """禁止文字置換後に、予約語の場合は末尾に'_'を追加する"""
+    sanitized = sanitize_name(name)
+    lower_name = sanitized.lower()
+    stem_lower, _ = os.path.splitext(lower_name)
+    if lower_name in RESERVED_NAMES or stem_lower in RESERVED_NAMES:
+        return sanitized + "_"
     return sanitized
 
 
@@ -99,7 +142,7 @@ class RenameFrame(wx.Frame):
     def _rename_path(self, path: str):
         """単一のファイルまたはフォルダをリネームする"""
         original_name = os.path.basename(path)
-        new_name = sanitize_name(original_name)
+        new_name = make_safe_name(original_name)
         parent_dir = os.path.dirname(path)
         new_path = os.path.join(parent_dir, new_name)
 
