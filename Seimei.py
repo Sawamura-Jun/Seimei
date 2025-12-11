@@ -18,9 +18,13 @@ REPLACEMENTS = [
     ("?", "_"),
     ("|", "_"),
     ("　", "_"),
-    ("\u00A0","_"),  # 改行不可のスペース
+    ("\u00A0", "_"),  # 改行不可のスペース
     ("~$", "_"),     # 本来は、"~$"で始まるファイル名が不可だが一律に置き換える
+    (";", "_"),
 ]
+
+LEADING_REMOVE = (" ", ".", "゛", "ဧ", "　")
+TRAILING_REMOVE = (" ", "　")
 
 RESERVED_NAMES = {
     "desktop.ini",
@@ -53,21 +57,43 @@ RESERVED_NAMES = {
 
 
 def sanitize_name(name: str) -> str:
-    """置換ルールに従ってファイル名を変換する"""
+    """置換ルールに従ってファイル名を変換する（禁止文字の置換）"""
     sanitized = name
     for target, replacement in REPLACEMENTS:
         sanitized = sanitized.replace(target, replacement)
     return sanitized
 
 
-def make_safe_name(name: str) -> str:
-    """禁止文字置換後に、予約語の場合は末尾に'_'を追加する"""
-    sanitized = sanitize_name(name)
-    lower_name = sanitized.lower()
+def trim_name_edges(name: str, is_dir: bool) -> str:
+    """先頭・末尾の禁止文字を除去する"""
+    trimmed = name
+    while trimmed and trimmed.startswith(LEADING_REMOVE):
+        trimmed = trimmed[1:]
+    while trimmed and trimmed.endswith(TRAILING_REMOVE):
+        trimmed = trimmed[:-1]
+    if is_dir:
+        while trimmed.endswith("."):
+            trimmed = trimmed[:-1]
+    if not trimmed:
+        trimmed = "_"
+    return trimmed
+
+
+def make_safe_name(name: str, is_dir: bool) -> str:
+    """
+    処理の順番:
+    1. 予約語の処理（末尾に'_'を付与）
+    2. 先頭・末尾の処理
+    3. 禁止文字の置換
+    """
+    candidate = name
+    lower_name = candidate.lower()
     stem_lower, _ = os.path.splitext(lower_name)
     if lower_name in RESERVED_NAMES or stem_lower in RESERVED_NAMES:
-        return sanitized + "_"
-    return sanitized
+        candidate = candidate + "_"
+
+    trimmed = trim_name_edges(candidate, is_dir)
+    return sanitize_name(trimmed)
 
 
 class RenameDropTarget(wx.FileDropTarget):
@@ -158,7 +184,7 @@ class RenameFrame(wx.Frame):
     def _rename_path(self, path: str):
         """単一のファイルまたはフォルダをリネームする"""
         original_name = os.path.basename(path)
-        new_name = make_safe_name(original_name)
+        new_name = make_safe_name(original_name, os.path.isdir(path))
         parent_dir = os.path.dirname(path)
         new_path = os.path.join(parent_dir, new_name)
 
